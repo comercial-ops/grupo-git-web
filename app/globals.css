@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf9f5;
+  --foreground: #16241f;
+
+  /* Paleta de marca GRUPO GIT — verde-azulado petróleo + acento dorado/oliva,
+     inspirada en el logo. Reemplazable cuando se integre el logo real. */
+  --color-brand-950: #0b1a17;
+  --color-brand-900: #10241f;
+  --color-brand-800: #16342c;
+  --color-brand-700: #1f4438;
+  --color-brand-600: #2a5847;
+  --color-brand-500: #386f58;
+  --color-brand-100: #e4ece7;
+  --color-brand-50: #f2f6f3;
+
+  --color-accent-600: #8a7a2e;
+  --color-accent-500: #a99a54;
+  --color-accent-400: #c2b374;
+  --color-accent-100: #f1ecd9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-brand-950: var(--color-brand-950);
+  --color-brand-900: var(--color-brand-900);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-700: var(--color-brand-700);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-50: var(--color-brand-50);
+
+  --color-accent-600: var(--color-accent-600);
+  --color-accent-500: var(--color-accent-500);
+  --color-accent-400: var(--color-accent-400);
+  --color-accent-100: var(--color-accent-100);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.container-page {
+  max-width: 78rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
