@@ -26,6 +26,7 @@ export default function Footer() {
             <li><Link href="/tienda" className="hover:text-white">Tienda</Link></li>
             <li><Link href="/portafolio" className="hover:text-white">Portafolio y Servicios</Link></li>
             <li><Link href="/contacto" className="hover:text-white">Contáctanos</Link></li>
+            <li><Link href="/admin/login" className="text-brand-100/50 hover:text-white">Acceso interno</Link></li>
           </ul>
         </div>
 
