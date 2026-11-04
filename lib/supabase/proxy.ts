@@ -36,18 +36,25 @@ export async function updateSession(request: NextRequest) {
     // sesión anónima: las rutas /admin redirigen a login en vez de tumbar la app.
   }
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginRoute = request.nextUrl.pathname === "/admin/login";
+  const { pathname, search } = request.nextUrl;
+  const isLoginRoute = pathname === "/admin/login";
+  // Rutas internas: panel de admin e inventario (solo con sesión).
+  const isProtected =
+    !isLoginRoute && (pathname.startsWith("/admin") || pathname.startsWith("/inventario"));
 
-  if (isAdminRoute && !isLoginRoute && !user) {
+  if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
+    url.search = "";
+    url.searchParams.set("next", pathname + search);
     return NextResponse.redirect(url);
   }
 
   if (isLoginRoute && user) {
+    const next = request.nextUrl.searchParams.get("next") ?? "";
     const url = request.nextUrl.clone();
-    url.pathname = "/admin";
+    url.search = "";
+    url.pathname = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
     return NextResponse.redirect(url);
   }
 

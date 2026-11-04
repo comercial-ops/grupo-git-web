@@ -98,19 +98,37 @@ automáticamente.
   mensaje sí incluye el nombre, la referencia y la descripción del equipo
   para que el asesor lo identifique.
 
-## Pendientes de contenido real (placeholders marcados con `TODO`)
+## Inventario (interno, solo con login)
 
-- **Logo:** el header/footer usan un wordmark de texto "GRUPO GIT" mientras
-  se integra el logo real. Para reemplazarlo: agrega el archivo en `public/`
-  y cámbialo en [`components/Navbar.tsx`](components/Navbar.tsx) y
-  [`components/Footer.tsx`](components/Footer.tsx) por un `<Image>`.
-- **Fotos:** la landing y el portafolio usan fotos de stock (Unsplash) de
-  ingeniería/fibra óptica/capacitación como marcador temporal — están
-  centralizadas en [`lib/stock-images.ts`](lib/stock-images.ts) para
-  reemplazarlas fácilmente por fotos reales de GRUPO GIT.
-- **Correo de contacto:** en [`app/contacto/page.tsx`](app/contacto/page.tsx)
-  hay un correo de ejemplo (`contacto@grupogit.com`) — reemplázalo por el
-  real.
+Pestaña **Inventario** (aparece en el menú solo al iniciar sesión): tabla de los
+equipos que realmente hay en bodega, **independiente de la tienda**. Cada ítem
+tiene foto, nombre (link a la foto), referencia, marca, descripción básica,
+cantidad, localización y costo.
+
+1. **Una sola vez:** en Supabase > SQL Editor corre [`supabase/inventory.sql`](supabase/inventory.sql).
+   Crea la tabla `inventory_items` y un bucket **privado** para las fotos; solo
+   usuarios con login pueden leer o escribir.
+2. Inicia sesión en `/admin/login` desde el celular, abre **Inventario → + Agregar ítem**,
+   toma la foto con la cámara y llena los datos.
+3. Las fotos se reducen automáticamente (máx. 1600 px) antes de subirse.
+
+El **valor total** que muestra la tabla es `cantidad × costo` (el costo se asume
+**por unidad**).
+
+## Subida de archivos
+
+Las fotos y los PDF se suben **directo del navegador a Supabase Storage**, no por
+Vercel (que rechaza peticiones de más de ~4.5 MB). Catálogos: hasta 50 MB.
+
+## Contenido real
+
+- **Logo:** [`public/logo.png`](public/logo.png) (161×65 px). Si tienes una versión
+  más grande o en SVG/PNG de alta resolución, reemplaza ese archivo para que se
+  vea nítido en pantallas retina.
+- **Fotos de la landing/portafolio:** ahora no hay fotos de stock; se muestra un
+  diseño gráfico de marca. Para usar fotos reales copia los archivos a
+  `public/images/` y apunta a ellos en [`lib/site-images.ts`](lib/site-images.ts).
+- **Contacto:** correo, teléfonos y redes en [`lib/site.ts`](lib/site.ts).
 
 ## Estructura del proyecto
 
@@ -120,9 +138,11 @@ app/
   tienda/                Tienda (marketplace)
   portafolio/             Portafolio y Servicios + catálogos
   contacto/               Contáctanos
+  inventario/             Inventario interno (protegido)
   admin/                  Panel de administración (protegido)
-components/              Navbar, Footer, tarjetas de producto/catálogo, etc.
-lib/                     Clientes de Supabase, helper de WhatsApp, tipos
-supabase/schema.sql      Script SQL para crear la base de datos
-proxy.ts                 Protege /admin (redirige a login si no hay sesión)
+components/              Navbar, Footer, tarjetas, gráficos de marca
+lib/                     Clientes de Supabase, subida de archivos, WhatsApp, datos del sitio
+supabase/schema.sql      SQL base (productos y catálogos)
+supabase/inventory.sql   SQL del módulo de inventario
+proxy.ts                 Protege /admin e /inventario (redirige a login)
 ```

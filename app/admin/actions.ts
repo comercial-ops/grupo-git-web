@@ -4,21 +4,26 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-function slugifyFileName(name: string) {
-  const dot = name.lastIndexOf(".");
-  const ext = dot >= 0 ? name.slice(dot) : "";
-  const base = (dot >= 0 ? name.slice(0, dot) : name)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[^\x00-\x7F]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return `${Date.now()}-${base || "archivo"}${ext}`;
+// Los archivos (fotos y PDFs) los sube el navegador DIRECTO a Supabase Storage
+// (ver lib/upload.ts) para evitar el límite de tamaño de Vercel. Estas acciones
+// solo reciben la URL pública resultante y la validan.
+function isOwnPublicUrl(url: string, bucket: string) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return Boolean(base) && url.startsWith(`${base}/storage/v1/object/public/${bucket}/`);
+}
+
+async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { supabase, user };
 }
 
 export async function login(_prevState: string | null, formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "");
 
   if (!email || !password) {
     return "Ingresa tu correo y contraseña.";
@@ -31,7 +36,9 @@ export async function login(_prevState: string | null, formData: FormData) {
     return "Credenciales incorrectas. Verifica tu correo y contraseña.";
   }
 
-  redirect("/admin");
+  // Solo rutas internas (evita redirecciones a otros sitios).
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  redirect(safeNext);
 }
 
 export async function logout() {
@@ -41,52 +48,31 @@ export async function logout() {
 }
 
 export async function createProduct(_prevState: string | null, formData: FormData) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
   if (!user) return "No autorizado.";
 
   const name = String(formData.get("name") ?? "").trim();
   const reference = String(formData.get("reference") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const price = Number(formData.get("price") ?? 0);
-  const photo = formData.get("photo") as File | null;
+  const imageUrl = String(formData.get("image_url") ?? "");
 
   if (!name || !reference) {
     return "El nombre y la referencia son obligatorios.";
   }
-
-  let image_url: string | null = null;
-
-  if (photo && photo.size > 0) {
-    const path = slugifyFileName(photo.name);
-    const { error: uploadError } = await supabase.storage
-      .from("product-images")
-      .upload(path, photo, { contentType: photo.type });
-
-    if (uploadError) {
-      return `No se pudo subir la foto: ${uploadError.message}`;
-    }
-
-    const { data: publicUrl } = supabase.storage
-      .from("product-images")
-      .getPublicUrl(path);
-    image_url = publicUrl.publicUrl;
+  if (imageUrl && !isOwnPublicUrl(imageUrl, "product-images")) {
+    return "URL de imagen no válida.";
   }
 
-  const { error: insertError } = await supabase.from("products").insert({
+  const { error } = await supabase.from("products").insert({
     name,
     reference,
     description,
     price: Number.isFinite(price) ? price : 0,
-    image_url,
+    image_url: imageUrl || null,
   });
 
-  if (insertError) {
-    return `No se pudo guardar el producto: ${insertError.message}`;
-  }
+  if (error) return `No se pudo guardar el producto: ${error.message}`;
 
   revalidatePath("/admin");
   revalidatePath("/tienda");
@@ -95,11 +81,7 @@ export async function createProduct(_prevState: string | null, formData: FormDat
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
   if (!user) return;
 
   await supabase.from("products").delete().eq("id", id);
@@ -109,40 +91,18 @@ export async function deleteProduct(id: string) {
   revalidatePath("/");
 }
 
-export async function uploadCatalog(_prevState: string | null, formData: FormData) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function createCatalog(_prevState: string | null, formData: FormData) {
+  const { supabase, user } = await requireUser();
   if (!user) return "No autorizado.";
 
   const title = String(formData.get("title") ?? "").trim();
-  const file = formData.get("file") as File | null;
+  const fileUrl = String(formData.get("file_url") ?? "");
 
-  if (!title || !file || file.size === 0) {
-    return "Indica un título y selecciona un archivo PDF.";
-  }
+  if (!title || !fileUrl) return "Indica un título y selecciona un archivo PDF.";
+  if (!isOwnPublicUrl(fileUrl, "catalogs")) return "URL de archivo no válida.";
 
-  const path = slugifyFileName(file.name);
-  const { error: uploadError } = await supabase.storage
-    .from("catalogs")
-    .upload(path, file, { contentType: file.type || "application/pdf" });
-
-  if (uploadError) {
-    return `No se pudo subir el catálogo: ${uploadError.message}`;
-  }
-
-  const { data: publicUrl } = supabase.storage.from("catalogs").getPublicUrl(path);
-
-  const { error: insertError } = await supabase.from("catalogs").insert({
-    title,
-    file_url: publicUrl.publicUrl,
-  });
-
-  if (insertError) {
-    return `No se pudo guardar el catálogo: ${insertError.message}`;
-  }
+  const { error } = await supabase.from("catalogs").insert({ title, file_url: fileUrl });
+  if (error) return `No se pudo guardar el catálogo: ${error.message}`;
 
   revalidatePath("/admin");
   revalidatePath("/portafolio");
@@ -150,11 +110,7 @@ export async function uploadCatalog(_prevState: string | null, formData: FormDat
 }
 
 export async function deleteCatalog(id: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
   if (!user) return;
 
   await supabase.from("catalogs").delete().eq("id", id);

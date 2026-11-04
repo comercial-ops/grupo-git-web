@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { createClient } from "@/lib/supabase/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,14 +21,26 @@ export const metadata: Metadata = {
     "GRUPO GIT: servicios de ingeniería, medición OTDR, fusión de empalmes, capacitación técnica y venta de equipos de fibra óptica.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+async function isLoggedIn() {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    return Boolean(data.user);
+  } catch {
+    return false;
+  }
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const loggedIn = await isLoggedIn();
+
   return (
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
+        <Navbar loggedIn={loggedIn} />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>

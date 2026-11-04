@@ -2,44 +2,57 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import CatalogCard from "@/components/CatalogCard";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { FiberPattern, ServiceIcon } from "@/components/Graphics";
 import { createClient } from "@/lib/supabase/server";
 import { safeQuery } from "@/lib/supabase/safe-query";
 import { buildWhatsAppContactLink } from "@/lib/whatsapp";
-import { stockImages } from "@/lib/stock-images";
+import { siteImages } from "@/lib/site-images";
 import type { Catalog } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Portafolio y Servicios | GRUPO GIT",
   description:
-    "Servicios de ingeniería, medición OTDR, fusión de empalmes y capacitación técnica de GRUPO GIT. Descarga nuestros catálogos.",
+    "Servicios de ingeniería, medición OTDR, fusión de empalmes, alquiler de equipos, UPS y capacitación técnica de GRUPO GIT. Descarga nuestros catálogos.",
 };
 
 export const revalidate = 0;
 
 const services = [
   {
-    title: "Ingeniería y Diseño de Redes",
+    icon: "network" as const,
+    title: "Ingeniería y diseño de redes",
     description:
       "Levantamiento, diseño y ejecución de proyectos de redes de fibra óptica FTTH, troncales y enlaces dedicados.",
-    image: stockImages.serviceEngineering,
   },
   {
-    title: "Medición OTDR y Certificación",
+    icon: "gauge" as const,
+    title: "Medición OTDR y certificación",
     description:
-      "Caracterización de enlaces con reflectómetros OTDR de última generación y entrega de informes de certificación.",
-    image: stockImages.serviceOtdrFusion,
+      "Caracterización de enlaces en fibra activa y oscura con equipos OTDR, y entrega de informes de certificación.",
   },
   {
-    title: "Fusión de Empalmes",
+    icon: "tools" as const,
+    title: "Fusión de empalmes",
     description:
-      "Empalme de fibra óptica con fusionadoras de alta precisión, minimizando pérdidas de inserción en cada enlace.",
-    image: stockImages.portfolioHero,
+      "Empalme de fibra óptica con fusionadoras de alta precisión para minimizar las pérdidas de inserción.",
   },
   {
-    title: "Capacitación Técnica",
+    icon: "rental" as const,
+    title: "Alquiler de equipos",
+    description:
+      "OTDR, fusionadoras y PON power meters en alquiler por proyecto. Consulta el catálogo de alquileres.",
+  },
+  {
+    icon: "power" as const,
+    title: "UPS y respaldo de energía",
+    description:
+      "UPS on-line de doble conversión: monofásicas, bifásicas y trifásicas para infraestructura crítica.",
+  },
+  {
+    icon: "training" as const,
+    title: "Capacitación técnica",
     description:
       "Formación práctica para técnicos e ingenieros en instalación, medición, fusión y mantenimiento de redes ópticas.",
-    image: stockImages.trainingSecondary,
   },
 ];
 
@@ -52,14 +65,17 @@ export default async function PortafolioPage() {
   return (
     <div>
       <section className="relative overflow-hidden bg-brand-950">
-        <Image
-          src={stockImages.serviceTraining}
-          alt="Capacitación técnica en fibra óptica"
-          fill
-          priority
-          className="object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/85 to-brand-950/50" />
+        {siteImages.training && (
+          <Image
+            src={siteImages.training}
+            alt="Capacitación técnica en fibra óptica"
+            fill
+            priority
+            className="object-cover opacity-30"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800" />
+        <FiberPattern />
         <div className="container-page relative py-20 md:py-24">
           <h1 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-400">
             Portafolio y Servicios
@@ -71,29 +87,21 @@ export default async function PortafolioPage() {
       </section>
 
       <section className="container-page py-16">
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
             <div
               key={service.title}
-              className="flex gap-5 rounded-xl border border-brand-100 bg-white p-5 shadow-sm"
+              className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm"
             >
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg">
-                <Image
-                  src={service.image}
-                  alt={service.title}
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-brand-950">
-                  {service.title}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-brand-700/80">
-                  {service.description}
-                </p>
-              </div>
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-800 text-accent-400">
+                <ServiceIcon name={service.icon} className="h-6 w-6" />
+              </span>
+              <h3 className="mt-4 text-base font-semibold text-brand-950">
+                {service.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-brand-700/80">
+                {service.description}
+              </p>
             </div>
           ))}
         </div>

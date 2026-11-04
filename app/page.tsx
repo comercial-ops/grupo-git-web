@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import { FiberPattern, MediaOrIcon, ServiceIcon } from "@/components/Graphics";
 import { createClient } from "@/lib/supabase/server";
 import { safeQuery } from "@/lib/supabase/safe-query";
-import { stockImages } from "@/lib/stock-images";
+import { siteImages } from "@/lib/site-images";
 import type { Product } from "@/lib/types";
 
 const services = [
@@ -11,20 +12,30 @@ const services = [
     title: "Ingeniería de Telecomunicaciones",
     description:
       "Diseño, ejecución y supervisión de proyectos de redes de fibra óptica para operadores e industria.",
-    image: stockImages.serviceEngineering,
+    image: siteImages.engineering,
+    icon: "network" as const,
   },
   {
-    title: "Medición OTDR y Fusión de Empalmes",
+    title: "Alquiler y venta de OTDR y fusionadoras",
     description:
-      "Certificación de enlaces con equipos OTDR de alta precisión y fusión profesional de empalmes de fibra.",
-    image: stockImages.serviceOtdrFusion,
+      "Equipos de medición y fusión de fibra óptica en alquiler o a la venta, con respaldo técnico.",
+    image: siteImages.otdrFusion,
+    icon: "gauge" as const,
   },
   {
     title: "Capacitación Técnica",
     description:
       "Entrenamiento especializado para técnicos e ingenieros en instalación, medición y mantenimiento de redes ópticas.",
-    image: stockImages.serviceTraining,
+    image: siteImages.training,
+    icon: "training" as const,
   },
+];
+
+const offer = [
+  { icon: "rental" as const, label: "Alquiler de equipos", detail: "OTDR, fusionadoras y power meters" },
+  { icon: "gauge" as const, label: "Medición y certificación", detail: "Equipos OTDR, fibra activa y oscura" },
+  { icon: "power" as const, label: "UPS y energía", detail: "Respaldo on-line de 1 kVA a 1 MVA" },
+  { icon: "tools" as const, label: "Herramientas", detail: "Todo para trabajo en fibra óptica" },
 ];
 
 export default async function Home() {
@@ -41,14 +52,17 @@ export default async function Home() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-950">
-        <Image
-          src={stockImages.heroLanding}
-          alt="Infraestructura de telecomunicaciones y fibra óptica"
-          fill
-          priority
-          className="object-cover opacity-40"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/80 to-brand-950/40" />
+        {siteImages.hero && (
+          <Image
+            src={siteImages.hero}
+            alt="Infraestructura de telecomunicaciones y fibra óptica"
+            fill
+            priority
+            className="object-cover opacity-40"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800" />
+        <FiberPattern />
         <div className="container-page relative py-28 md:py-36">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-400">
             Ingeniería en fibra óptica
@@ -95,15 +109,13 @@ export default async function Home() {
               key={service.title}
               className="overflow-hidden rounded-xl border border-brand-100 bg-white shadow-sm"
             >
-              <div className="relative h-48 w-full">
-                <Image
-                  src={service.image}
-                  alt={service.title}
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                />
-              </div>
+              <MediaOrIcon
+                src={service.image}
+                alt={service.title}
+                icon={service.icon}
+                className="h-48 w-full"
+                sizes="(min-width: 768px) 33vw, 100vw"
+              />
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-brand-950">
                   {service.title}
@@ -117,18 +129,35 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Banda de equipo en acción */}
+      {/* Qué ofrecemos */}
       <section className="bg-brand-50 py-20">
         <div className="container-page grid items-center gap-10 md:grid-cols-2">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
-            <Image
-              src={stockImages.teamInAction}
-              alt="Ingenieros de GRUPO GIT en campo"
-              fill
-              className="object-cover"
-              sizes="(min-width: 768px) 50vw, 100vw"
-            />
-          </div>
+          {siteImages.team ? (
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+              <Image
+                src={siteImages.team}
+                alt="Equipo de GRUPO GIT en campo"
+                fill
+                className="object-cover"
+                sizes="(min-width: 768px) 50vw, 100vw"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {offer.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-brand-100 bg-white p-5 shadow-sm"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-800 text-accent-400">
+                    <ServiceIcon name={item.icon} className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-brand-950">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-brand-700/70">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-600">
               Experiencia comprobada

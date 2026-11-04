@@ -1,21 +1,59 @@
 "use client";
 
-import { useActionState, useRef } from "react";
-import { uploadCatalog } from "./actions";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { publicUrl, uploadToBucket } from "@/lib/upload";
+import { createCatalog } from "./actions";
+
+const MAX_MB = 50; // límite del plan gratuito de Supabase Storage
 
 export default function CatalogForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [error, formAction, pending] = useActionState(
-    async (_prevState: string | null, formData: FormData) => {
-      const result = await uploadCatalog(_prevState, formData);
-      if (!result) formRef.current?.reset();
-      return result;
-    },
-    null
-  );
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    setError(null);
+
+    const file = formData.get("file") as File | null;
+    formData.delete("file");
+    if (!file || file.size === 0) {
+      setError("Selecciona un archivo PDF.");
+      return;
+    }
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setError(`El archivo pesa ${(file.size / 1048576).toFixed(1)} MB; el máximo es ${MAX_MB} MB.`);
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const path = await uploadToBucket("catalogs", file, {
+          name: String(formData.get("title") ?? file.name),
+          ext: "pdf",
+          contentType: file.type || "application/pdf",
+        });
+        formData.set("file_url", publicUrl("catalogs", path));
+      } catch (err) {
+        setError(`No se pudo subir el catálogo: ${err instanceof Error ? err.message : "error"}`);
+        return;
+      }
+
+      const result = await createCatalog(null, formData);
+      if (result) {
+        setError(result);
+        return;
+      }
+      form.reset();
+      router.refresh();
+    });
+  }
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-wrap items-end gap-4">
+    <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-4">
       <div className="min-w-[220px] flex-1">
         <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
           Título del catálogo
@@ -29,7 +67,7 @@ export default function CatalogForm() {
 
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Archivo PDF
+          Archivo PDF (hasta {MAX_MB} MB)
         </label>
         <input
           name="file"

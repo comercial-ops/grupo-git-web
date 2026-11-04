@@ -1,72 +1,77 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { compressImage, publicUrl, uploadToBucket } from "@/lib/upload";
 import { createProduct } from "./actions";
 
+const input =
+  "mt-1 w-full rounded-md border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500";
+const label = "block text-xs font-semibold uppercase tracking-wide text-brand-700/70";
+
 export default function ProductForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [error, formAction, pending] = useActionState(
-    async (_prevState: string | null, formData: FormData) => {
-      const result = await createProduct(_prevState, formData);
-      if (!result) formRef.current?.reset();
-      return result;
-    },
-    null
-  );
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    setError(null);
+
+    startTransition(async () => {
+      try {
+        const photo = formData.get("photo") as File | null;
+        formData.delete("photo");
+        if (photo && photo.size > 0) {
+          const { blob, ext, contentType } = await compressImage(photo);
+          const path = await uploadToBucket("product-images", blob, {
+            name: String(formData.get("name") ?? ""),
+            ext,
+            contentType,
+          });
+          formData.set("image_url", publicUrl("product-images", path));
+        }
+      } catch (err) {
+        setError(`No se pudo subir la foto: ${err instanceof Error ? err.message : "error"}`);
+        return;
+      }
+
+      const result = await createProduct(null, formData);
+      if (result) {
+        setError(result);
+        return;
+      }
+      form.reset();
+      router.refresh();
+    });
+  }
 
   return (
-    <form ref={formRef} action={formAction} className="grid gap-4 sm:grid-cols-2">
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Nombre del equipo
-        </label>
-        <input
-          name="name"
-          required
-          className="mt-1 w-full rounded-md border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-        />
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className={label}>Nombre del equipo</label>
+        <input name="name" required className={input} />
       </div>
 
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Referencia
-        </label>
-        <input
-          name="reference"
-          required
-          className="mt-1 w-full rounded-md border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-        />
+      <div>
+        <label className={label}>Referencia</label>
+        <input name="reference" required className={input} />
       </div>
 
       <div className="sm:col-span-2">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Descripción
-        </label>
-        <textarea
-          name="description"
-          rows={3}
-          className="mt-1 w-full rounded-md border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-        />
+        <label className={label}>Descripción</label>
+        <textarea name="description" rows={3} className={input} />
       </div>
 
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Precio (COP)
-        </label>
-        <input
-          name="price"
-          type="number"
-          min="0"
-          step="1"
-          required
-          className="mt-1 w-full rounded-md border border-brand-100 px-3 py-2 text-sm outline-none focus:border-brand-500"
-        />
+      <div>
+        <label className={label}>Precio (COP)</label>
+        <input name="price" type="number" min="0" step="1" required className={input} />
       </div>
 
-      <div className="sm:col-span-1">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-brand-700/70">
-          Foto del producto
-        </label>
+      <div>
+        <label className={label}>Foto del producto</label>
         <input
           name="photo"
           type="file"

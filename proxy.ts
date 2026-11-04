@@ -5,6 +5,7 @@ export function proxy(request: NextRequest) {
   return updateSession(request);
 }
 
+// Rutas que requieren sesión: panel de admin e inventario interno.
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/inventario/:path*"],
 };

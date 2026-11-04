@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { site } from "@/lib/site";
 import { buildWhatsAppContactLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
@@ -8,23 +9,29 @@ export const metadata: Metadata = {
     "Escríbenos por WhatsApp o correo para cotizar equipos, servicios de ingeniería o capacitación técnica en fibra óptica.",
 };
 
-const contactItems = [
+type ContactItem = { label: string; lines: { text: string; href?: string }[] };
+
+const contactItems: ContactItem[] = [
   {
     label: "WhatsApp",
-    value: "+57 312 895 3243",
-    href: buildWhatsAppContactLink(),
+    lines: [{ text: site.whatsappDisplay, href: buildWhatsAppContactLink() }],
   },
   {
     label: "Correo",
-    // TODO: reemplazar por el correo real de GRUPO GIT
-    value: "contacto@grupogit.com",
-    href: "mailto:contacto@grupogit.com",
+    lines: [{ text: site.email, href: `mailto:${site.email}` }],
   },
   {
-    label: "Cobertura",
-    value: "Colombia — atención nacional",
-    href: undefined,
+    label: "Teléfonos",
+    lines: site.phones.map((p) => ({ text: p.display, href: `tel:${p.tel}` })),
   },
+  {
+    label: "Web y redes",
+    lines: [
+      { text: site.website.display, href: site.website.href },
+      ...site.socials.map((s) => ({ text: s })),
+    ],
+  },
+  { label: "Cobertura", lines: [{ text: `${site.country} — atención nacional` }] },
 ];
 
 export default function ContactoPage() {
@@ -70,19 +77,22 @@ export default function ContactoPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">
                   {item.label}
                 </p>
-                {item.href ? (
-                  <a
-                    href={item.href}
-                    target={item.href.startsWith("http") ? "_blank" : undefined}
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-brand-950 hover:text-brand-700"
-                  >
-                    {item.value}
-                  </a>
-                ) : (
-                  <p className="text-sm font-medium text-brand-950">
-                    {item.value}
-                  </p>
+                {item.lines.map((line) =>
+                  line.href ? (
+                    <a
+                      key={line.text}
+                      href={line.href}
+                      target={line.href.startsWith("http") ? "_blank" : undefined}
+                      rel="noopener noreferrer"
+                      className="block text-sm font-medium text-brand-950 hover:text-brand-700"
+                    >
+                      {line.text}
+                    </a>
+                  ) : (
+                    <p key={line.text} className="text-sm font-medium text-brand-950">
+                      {line.text}
+                    </p>
+                  )
                 )}
               </li>
             ))}
