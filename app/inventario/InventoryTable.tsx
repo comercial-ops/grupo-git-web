@@ -3,13 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { InventoryItem } from "@/lib/types";
+import { filterItems, totals } from "@/lib/inventory-report";
 import { formatCOP } from "@/lib/whatsapp";
+import { downloadInventoryExcel } from "./exportExcel";
 
 export type InventoryRow = InventoryItem & { photoUrl: string | null };
-
-// Búsqueda sin distinguir mayúsculas ni tildes ("bogota" encuentra "Bogotá").
-const normalize = (s: string) =>
-  s.normalize("NFD").replace(/[^\x00-\x7F]/g, "").toLowerCase().trim();
 
 function CameraIcon() {
   return (
@@ -38,19 +36,27 @@ function NameCell({ row }: { row: InventoryRow }) {
 
 export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const [query, setQuery] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = normalize(query);
-    if (!q) return rows;
-    return rows.filter((r) =>
-      [r.name, r.reference, r.brand, r.description, r.location].some((v) =>
-        normalize(v).includes(q)
-      )
-    );
-  }, [rows, query]);
+  const filtered = useMemo(() => filterItems(rows, query), [rows, query]);
+  const { units, value } = totals(filtered);
 
-  const units = filtered.reduce((sum, r) => sum + r.quantity, 0);
-  const value = filtered.reduce((sum, r) => sum + r.quantity * Number(r.cost), 0);
+  async function onExcel() {
+    setExportError(null);
+    setExporting(true);
+    try {
+      await downloadInventoryExcel(filtered);
+    } catch {
+      setExportError("No se pudo generar el Excel. Intenta de nuevo.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  const secondaryBtn =
+    "rounded-md border border-brand-200 bg-white px-4 py-2.5 text-sm font-medium text-brand-800 transition-colors hover:bg-brand-50 disabled:opacity-60";
+  const reportHref = `/inventario/reporte${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`;
 
   return (
     <div>
@@ -68,6 +74,20 @@ export default function InventoryTable({ rows }: { rows: InventoryRow[] }) {
         >
           + Agregar ítem
         </Link>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={onExcel} disabled={exporting || filtered.length === 0} className={secondaryBtn}>
+          {exporting ? "Generando…" : "Descargar Excel"}
+        </button>
+        <Link href={reportHref} className={secondaryBtn}>
+          Reporte PDF / imprimir
+        </Link>
+        {query.trim() && (
+          <span className="text-xs text-brand-700/70">
+            Excel y reporte incluyen solo lo filtrado por la búsqueda.
+          </span>
+        )}
+        {exportError && <span className="text-xs text-red-600">{exportError}</span>}
       </div>
 
       {filtered.length === 0 ? (

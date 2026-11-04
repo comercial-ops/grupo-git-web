@@ -5,7 +5,7 @@ import { buildWhatsAppContactLink } from "@/lib/whatsapp";
 
 export default function Footer() {
   return (
-    <footer className="mt-24 border-t border-brand-800 bg-brand-950 text-brand-100/80">
+    <footer className="mt-24 border-t border-brand-800 bg-brand-950 text-brand-100/80 print:hidden">
       <div className="container-page grid gap-10 py-14 md:grid-cols-3">
         <div>
           <div className="inline-block rounded-lg bg-white px-3 py-2">

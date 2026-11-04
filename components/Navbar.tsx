@@ -27,7 +27,7 @@ export default function Navbar({ loggedIn = false }: { loggedIn?: boolean }) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-brand-100 bg-white">
+    <header className="sticky top-0 z-50 border-b border-brand-100 bg-white print:hidden">
       <nav className="container-page flex h-16 items-center justify-between">
         <Link href="/" aria-label="GRUPO GIT - Inicio" onClick={() => setOpen(false)}>
           <Image

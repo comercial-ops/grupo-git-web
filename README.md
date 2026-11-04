@@ -112,6 +112,19 @@ cantidad, localización y costo.
    toma la foto con la cámara y llena los datos.
 3. Las fotos se reducen automáticamente (máx. 1600 px) antes de subirse.
 
+### Reportes del inventario
+
+En la pestaña Inventario hay dos botones. Ambos respetan el texto del buscador
+(si buscas "Bogotá", el reporte solo incluye esos ítems):
+
+- **Descargar Excel**: archivo `.xlsx` con todas las columnas, números reales (se
+  pueden sumar) y una fila de totales. Se genera en el navegador.
+- **Reporte PDF / imprimir** (`/inventario/reporte`): reporte agrupado por
+  localización, con subtotales y total general. Usa **Imprimir / Guardar como PDF**
+  y elige "Guardar como PDF" como impresora. Sale en hoja A4 horizontal, sin menú.
+
+Los reportes no incluyen las fotos.
+
 El **valor total** que muestra la tabla es `cantidad × costo` (el costo se asume
 **por unidad**).
 
